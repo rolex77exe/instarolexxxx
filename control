@@ -1,0 +1,9 @@
+Package: com.rolex7exe.tiktokbranding
+Name: Rolex7exe TikTok Branding Patch
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Rebrands BHTikTok texts to rolex7exe and disables developer links in the settings UI.
+Maintainer: rolex7exe
+Author: rolex7exe
+Section: Tweaks
