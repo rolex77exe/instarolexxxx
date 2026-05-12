@@ -202,16 +202,18 @@ static BOOL RXShouldBlockURL(NSURL *url) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    self.title = RXRebrandText(self.title);
-    self.navigationItem.title = RXRebrandText(self.navigationItem.title);
+    UIViewController *controller = (UIViewController *)self;
+    controller.title = RXRebrandText(controller.title);
+    controller.navigationItem.title = RXRebrandText(controller.navigationItem.title);
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
-    self.title = RXRebrandText(self.title);
-    self.navigationItem.title = RXRebrandText(self.navigationItem.title);
+    UIViewController *controller = (UIViewController *)self;
+    controller.title = RXRebrandText(controller.title);
+    controller.navigationItem.title = RXRebrandText(controller.navigationItem.title);
     BOOL foundDeveloperLink = NO;
-    RXPatchViewTree(self.view, &foundDeveloperLink);
+    RXPatchViewTree(controller.view, &foundDeveloperLink);
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
