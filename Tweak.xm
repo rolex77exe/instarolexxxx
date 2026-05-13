@@ -14,6 +14,11 @@ static NSArray<NSString *> *RXDeveloperLinkTokens(void) {
             @"boosty",
             @"boosty.to",
             @"donate",
+            @"telegram channel",
+            @"github page",
+            @"support bhttpp",
+            @"bhttpp",
+            @"tap to join the telegram",
             @"geliştirici",
             @"developer"
         ];
@@ -28,7 +33,7 @@ static NSString *RXRebrandText(NSString *text) {
 
     NSError *error = nil;
     NSRegularExpression *regex =
-        [NSRegularExpression regularExpressionWithPattern:@"BHTikTok\\s*\\+\\+|BHTikTok\\s*Plus|BHTikTok|BHTiktok"
+        [NSRegularExpression regularExpressionWithPattern:@"BHTikTokpp|BHTikTok\\s*\\+\\+|BHTikTok\\s*Plus|BHTT\\s*\\+\\+|BHTTPP|BHTikTok|BHTiktok"
                                                   options:NSRegularExpressionCaseInsensitive
                                                     error:&error];
     if (error != nil || regex == nil) {
@@ -176,20 +181,36 @@ static BOOL RXShouldBlockURL(NSURL *url) {
     return NO;
 }
 
+static void RXPatchController(UIViewController *controller) {
+    if (controller == nil) {
+        return;
+    }
+
+    controller.title = RXRebrandText(controller.title);
+    controller.navigationItem.title = RXRebrandText(controller.navigationItem.title);
+    BOOL foundDeveloperLink = NO;
+    RXPatchViewTree(controller.view, &foundDeveloperLink);
+}
+
 %hook NSBundle
 
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName {
     NSString *localized = %orig;
     NSString *bundlePath = self.bundlePath.lowercaseString ?: @"";
-    if (![bundlePath containsString:@"bhtiktok.bundle"]) {
+    if (![bundlePath containsString:@"bhtiktok.bundle"] && ![bundlePath containsString:@"bhtiktokpp.bundle"]) {
         return localized;
     }
 
     NSString *lowerKey = key.lowercaseString ?: @"";
-    if ([lowerKey isEqualToString:@"telegram"] ||
-        [lowerKey isEqualToString:@"donate"] ||
-        [lowerKey isEqualToString:@"donatemessage"] ||
-        [lowerKey isEqualToString:@"donateviapaypal"]) {
+    if ([lowerKey containsString:@"developer_"] ||
+        [lowerKey isEqualToString:@"developer"] ||
+        [lowerKey containsString:@"telegram"] ||
+        [lowerKey containsString:@"github"] ||
+        [lowerKey containsString:@"x page"] ||
+        [lowerKey containsString:@"boosty"] ||
+        [lowerKey containsString:@"coffee"] ||
+        [lowerKey containsString:@"donate"] ||
+        [lowerKey containsString:@"support"]) {
         return @"";
     }
 
@@ -202,18 +223,12 @@ static BOOL RXShouldBlockURL(NSURL *url) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    UIViewController *controller = (UIViewController *)self;
-    controller.title = RXRebrandText(controller.title);
-    controller.navigationItem.title = RXRebrandText(controller.navigationItem.title);
+    RXPatchController((UIViewController *)self);
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
-    UIViewController *controller = (UIViewController *)self;
-    controller.title = RXRebrandText(controller.title);
-    controller.navigationItem.title = RXRebrandText(controller.navigationItem.title);
-    BOOL foundDeveloperLink = NO;
-    RXPatchViewTree(controller.view, &foundDeveloperLink);
+    RXPatchController((UIViewController *)self);
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -247,6 +262,55 @@ static BOOL RXShouldBlockURL(NSURL *url) {
         }
     }
     %orig;
+}
+
+%end
+
+%hook ViewController
+
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    RXPatchController((UIViewController *)self);
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    RXPatchController((UIViewController *)self);
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    %orig;
+    RXPatchCell(cell);
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
+    %orig;
+    BOOL foundDeveloperLink = NO;
+    RXPatchViewTree(view, &foundDeveloperLink);
+    if (foundDeveloperLink) {
+        view.hidden = YES;
+    }
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    if (cell != nil) {
+        BOOL foundDeveloperLink = NO;
+        RXPatchViewTree(cell.contentView, &foundDeveloperLink);
+        if (foundDeveloperLink) {
+            [tableView deselectRowAtIndexPath:indexPath animated:NO];
+            return;
+        }
+    }
+    %orig;
+}
+
+- (void)handleDeveloperSectionSelectionForRow:(NSInteger)row {
+    return;
+}
+
+- (void)openTelegramChannel {
+    return;
 }
 
 %end
