@@ -26,6 +26,28 @@ static NSArray<NSString *> *RXDeveloperLinkTokens(void) {
     return tokens;
 }
 
+static UITableViewCell *RXFindParentCellForView(UIView *view) {
+    UIView *cursor = view;
+    while (cursor != nil) {
+        if ([cursor isKindOfClass:[UITableViewCell class]]) {
+            return (UITableViewCell *)cursor;
+        }
+        cursor = cursor.superview;
+    }
+    return nil;
+}
+
+static void RXDisableDeveloperCell(UITableViewCell *cell) {
+    if (cell == nil) {
+        return;
+    }
+    cell.hidden = YES;
+    cell.userInteractionEnabled = NO;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.accessoryType = UITableViewCellAccessoryNone;
+    cell.contentView.hidden = YES;
+}
+
 static NSString *RXRebrandText(NSString *text) {
     if (text.length == 0) {
         return text;
@@ -77,6 +99,7 @@ static void RXPatchLabel(UILabel *label, BOOL *developerLinkFound) {
         }
         label.text = @"";
         label.hidden = YES;
+        RXDisableDeveloperCell(RXFindParentCellForView(label));
     }
 }
 
@@ -98,6 +121,7 @@ static void RXPatchButton(UIButton *button, BOOL *developerLinkFound) {
         button.hidden = YES;
         button.enabled = NO;
         button.userInteractionEnabled = NO;
+        RXDisableDeveloperCell(RXFindParentCellForView(button));
     }
 }
 
@@ -140,11 +164,7 @@ static void RXPatchCell(UITableViewCell *cell) {
     }
 
     if (developerLinkFound) {
-        cell.hidden = YES;
-        cell.userInteractionEnabled = NO;
-        cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        cell.accessoryType = UITableViewCellAccessoryNone;
-        cell.contentView.hidden = YES;
+        RXDisableDeveloperCell(cell);
     } else {
         cell.contentView.hidden = NO;
     }
@@ -215,6 +235,59 @@ static void RXPatchController(UIViewController *controller) {
     }
 
     return RXRebrandText(localized);
+}
+
+%end
+
+%hook UILabel
+
+- (void)setText:(NSString *)text {
+    NSString *patched = RXRebrandText(text);
+    BOOL isDeveloperLinkText = RXContainsDeveloperLinkToken(text) || RXContainsDeveloperLinkToken(patched);
+    if (isDeveloperLinkText) {
+        patched = @"";
+    }
+    %orig(patched);
+    if (isDeveloperLinkText) {
+        self.hidden = YES;
+        RXDisableDeveloperCell(RXFindParentCellForView(self));
+    }
+}
+
+%end
+
+%hook UIButton
+
+- (void)setTitle:(NSString *)title forState:(UIControlState)state {
+    NSString *patched = RXRebrandText(title);
+    BOOL isDeveloperLinkText = RXContainsDeveloperLinkToken(title) || RXContainsDeveloperLinkToken(patched);
+    if (isDeveloperLinkText) {
+        patched = @"";
+    }
+    %orig(patched, state);
+    if (isDeveloperLinkText) {
+        self.hidden = YES;
+        self.enabled = NO;
+        self.userInteractionEnabled = NO;
+        RXDisableDeveloperCell(RXFindParentCellForView(self));
+    }
+}
+
+%end
+
+%hook UINavigationItem
+
+- (void)setTitle:(NSString *)title {
+    %orig(RXRebrandText(title));
+}
+
+%end
+
+%hook UITableViewCell
+
+- (void)layoutSubviews {
+    %orig;
+    RXPatchCell(self);
 }
 
 %end
